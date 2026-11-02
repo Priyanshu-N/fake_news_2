@@ -27,7 +27,7 @@ def inspect_dataset(file_path: Path) -> None:
     df = pd.read_csv(file_path)
 
     # 1. Dataset dimensions
-    print("\n1. Dataset Shape")
+    print("\n  Dataset Shape")
     print(f"Rows: {df.shape[0]}")
     print(f"Columns: {df.shape[1]}")
 
