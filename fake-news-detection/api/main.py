@@ -11,7 +11,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 2. Add CORS Middleware (Allows our React frontend to make web requests to FastAPI)
+# 2. Add CORS Middleware (allows React frontend on port 5173 to communicate with API)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,22 +26,25 @@ MODEL_PATH = PROJECT_ROOT / "models" / "truthlens_pipeline.joblib"
 
 pipeline = None
 
-# Load model during server startup
+
 @app.on_event("startup")
 def load_model_artifact():
     global pipeline
     if not MODEL_PATH.exists():
-        raise RuntimeError(f"Model file not found at {MODEL_PATH}. Please run `python -m src.models.train` first!")
+        raise RuntimeError(
+            f"Model file not found at {MODEL_PATH}. "
+            "Please run `python -m src.models.train` first!"
+        )
     
     print(f"Loading trained pipeline from: {MODEL_PATH}")
     pipeline = joblib.load(MODEL_PATH)
     print("Model loaded successfully!")
 
 
-# 4. Define data structures (Pydantic models for request validation)
+# 4. Pydantic schema for request & response validation
 class ArticleInput(BaseModel):
-    title: str = Field(default="", description="Headline of the article")
-    text: str = Field(..., min_length=10, description="Body content of the article")
+    title: str = Field(default="", description="Headline of the news article")
+    text: str = Field(..., min_length=10, description="Body content of the news article")
 
 
 class PredictionOutput(BaseModel):
@@ -54,26 +57,31 @@ class PredictionOutput(BaseModel):
 # 5. Define API Endpoints
 @app.get("/")
 def home():
-    return {"message": "Welcome to TruthLens AI API 🚀. Visit /docs to test endpoints!"}
+    return {
+        "message": "Welcome to TruthLens AI API 🚀. Visit /docs for interactive documentation."
+    }
 
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_news(article: ArticleInput):
-    """Takes headline and article text, returns prediction with confidence score."""
     if pipeline is None:
         raise HTTPException(status_code=500, detail="Model pipeline is not loaded.")
 
-    # Combine title and text exactly as done during training
-    full_text = f"{article.title} {article.text}".strip()
+    full_text = f"{article.title} {article.text}".lower().strip()
 
-    # Get binary prediction (0 = Fake, 1 = Real)
+    # Predict
     prediction = int(pipeline.predict([full_text])[0])
-
-    # Get probability score (confidence percentage)
     probabilities = pipeline.predict_proba([full_text])[0]
-    confidence_score = float(probabilities[prediction]) * 100
 
-    label_names = {0: "Fake News", 1: "Real News"}
+    # PRINT DEBUG LOGS TO TERMINAL
+    print("\n" + "="*50)
+    print("DEBUG TEST INPUT:", full_text[:100])
+    print("DEBUG PREDICTION INTEGER:", prediction)
+    print("DEBUG PROBABILITIES [Class 0, Class 1]:", probabilities)
+    print("="*50 + "\n")
+
+    label_names = {1: "Fake News", 0: "Real News"}
+    confidence_score = float(probabilities[prediction]) * 100
 
     return {
         "label": prediction,

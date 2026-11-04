@@ -1,68 +1,53 @@
 from pathlib import Path
-
 import pandas as pd
 
-
-# Locate the dataset relative to the project directory.
+# Define paths relative to project root
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-DATASET_PATH = (
-    PROJECT_ROOT / "data" / "raw" / "WELFake_Dataset.csv"
-)
+DATASET_PATH = PROJECT_ROOT / "data" / "raw" / "WELFake_Dataset.csv"
 
 
 def inspect_dataset(file_path: Path) -> None:
-    """Inspect the dataset without modifying the original file."""
+    """Inspect the raw dataset without modifying original data."""
 
     if not file_path.exists():
         raise FileNotFoundError(
-            f"Dataset not found at: {file_path}"
+            f"Dataset not found at: {file_path}. "
+            "Please ensure WELFake_Dataset.csv is placed inside data/raw/"
         )
 
     print("=" * 60)
-    print("FAKE NEWS DATASET INSPECTION")
+    print("TRUTHLENS AI: DATASET INSPECTION")
     print("=" * 60)
 
-    # Load the CSV file.
+    # Load dataset
     df = pd.read_csv(file_path)
 
-    # 1. Dataset dimensions
-    print("\n  Dataset Shape")
-    print(f"Rows: {df.shape[0]}")
-    print(f"Columns: {df.shape[1]}")
+    print("\n1. Dataset Dimensions")
+    print(f"Total Rows:    {df.shape[0]:,}")
+    print(f"Total Columns: {df.shape[1]}")
 
-    # 2. Column names
     print("\n2. Column Names")
     print(df.columns.tolist())
 
-    # 3. First five records
-    print("\n3. First Five Records")
+    print("\n3. First 5 Records")
     print(df.head().to_string())
 
-    # 4. Data types
     print("\n4. Column Data Types")
     print(df.dtypes)
 
-    # 5. Missing values
-    print("\n5. Missing Values")
+    print("\n5. Missing Values per Column")
     print(df.isnull().sum())
 
-    # 6. Duplicate records
     print("\n6. Duplicate Records")
-    print(f"Duplicate rows: {df.duplicated().sum()}")
+    print(f"Exact Duplicate Rows: {df.duplicated().sum():,}")
 
-    # 7. Label distribution
     print("\n7. Label Distribution")
-
     if "label" in df.columns:
         print(df["label"].value_counts(dropna=False))
-        print("\nLabel Distribution (Percentages)")
-        print(
-            (df["label"].value_counts(normalize=True) * 100)
-            .round(2)
-        )
+        print("\nLabel Proportions (%):")
+        print((df["label"].value_counts(normalize=True) * 100).round(2))
     else:
-        print("No column named 'label' was found.")
+        print("❌ Warning: No 'label' column found in dataset.")
 
     print("\nInspection complete.")
 
